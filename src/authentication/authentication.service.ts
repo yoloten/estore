@@ -1,17 +1,24 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PostgresErrorCode } from 'src/database/database.enum';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
-import bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AuthenticationService {
-  constructor(private readonly usersService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async register(registerData: RegisterDto) {
     const hashedPassword = await bcrypt.hash(registerData.password, 10);
     try {
-      const createdUser = await this.usersService.create({
+      const createdUser = await this.userService.create({
         ...registerData,
         password: hashedPassword,
       });
@@ -36,11 +43,11 @@ export class AuthenticationService {
     }
   }
 
-  async getAuthenticatedUser(email: string, hashedPassword: string) {
+  async getAuthenticatedUser(email: string, plainPassword: string) {
     try {
-      const user = await this.usersService.findOneByEmail(email);
+      const user = await this.userService.findOneByEmail(email);
 
-      await this.verifyPassword(user.password, hashedPassword);
+      await this.verifyPassword(plainPassword, user.password);
 
       user.password = undefined;
 
@@ -72,5 +79,17 @@ export class AuthenticationService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  public login(user: TokenPayload) {
+    const { id, ...rest } = user;
+    const payload = { ...rest, sub: id };
+    const token = this.jwtService.sign(payload);
+   
+    return { token };
+  }
+
+  public getCookieForLogOut() {
+    return `Authentication=; HttpOnly; Path=/; Max-Age=0`;
   }
 }

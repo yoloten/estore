@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import JwtAuthenticationGuard from 'src/authentication/guards/jwt-authentication.guard';
+import { RequestWithUser } from 'src/authentication/interfaces/request-with-user.interface';
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
@@ -13,6 +15,7 @@ export class BookController {
   }
 
   @Get()
+  @UseGuards(JwtAuthenticationGuard)
   findAll() {
     return this.bookService.findAll();
   }

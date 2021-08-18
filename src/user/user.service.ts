@@ -1,7 +1,7 @@
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
@@ -24,8 +24,14 @@ export class UserService {
     return `This action returns all user`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) {
+    const user = await this.usersRepository.findOne({ id });
+    
+    if (user) {
+      return user;
+    }
+
+    throw new HttpException('User with this id does not exist', HttpStatus.NOT_FOUND);
   }
 
   async findOneByEmail(email: string) {
