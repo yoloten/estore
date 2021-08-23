@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../user/entities/user.entity';
+import { SignInDTO } from './dto/sign-in.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -22,9 +23,8 @@ export class AuthenticationService {
         ...registerData,
         password: hashedPassword,
       });
-      const { password, ...returnUser } = createdUser;
-
-      return returnUser;
+    
+      return createdUser;
     } catch (error) {
       if (error?.code === PostgresErrorCode.UniqueViolation) {
         throw new HttpException(
@@ -43,13 +43,11 @@ export class AuthenticationService {
     }
   }
 
-  async getAuthenticatedUser(email: string, plainPassword: string) {
+  async getAuthenticatedUser(signInDTO: SignInDTO) {
     try {
-      const user = await this.userService.findOneByEmail(email);
+      const user = await this.userService.findOneByEmail(signInDTO.email);
 
-      await this.verifyPassword(plainPassword, user.password);
-
-      user.password = undefined;
+      await this.verifyPassword(signInDTO.plainPassword, user.password);
 
       return user;
     } catch (error) {
@@ -82,14 +80,9 @@ export class AuthenticationService {
   }
 
   public login(user: TokenPayload) {
-    const { id, ...rest } = user;
-    const payload = { ...rest, sub: id };
+    const payload = { ...user, sub: user.id };
     const token = this.jwtService.sign(payload);
    
     return { token };
-  }
-
-  public getCookieForLogOut() {
-    return `Authentication=; HttpOnly; Path=/; Max-Age=0`;
   }
 }
