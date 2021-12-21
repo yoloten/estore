@@ -5,7 +5,7 @@ import { UpdateImageDto } from './dto/update-image.dto';
 
 @Controller('image')
 export class ImageController {
-  constructor(private readonly imageService: ImageService) {}
+  constructor(private readonly imageService: ImageService) { }
 
   @Post()
   create(@Body() createImageDto: CreateImageDto) {
